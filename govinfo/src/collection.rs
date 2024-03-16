@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Collection {
     collection_code: String,
     collection_name: String,
