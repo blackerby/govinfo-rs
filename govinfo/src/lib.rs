@@ -1,15 +1,8 @@
+pub mod collection;
+
 #[allow(unused)]
 use serde::Deserialize;
 use serde::Serialize;
-
-#[allow(dead_code)]
-#[derive(Serialize, Deserialize)]
-struct Collection {
-    collection_code: String,
-    collection_name: String,
-    package_count: usize,
-    granule_count: Option<usize>,
-}
 
 #[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
