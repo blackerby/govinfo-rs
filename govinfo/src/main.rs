@@ -7,5 +7,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("{:#?}", collections);
 
+    let packages = client.published_since("2024-03-13", "bills")?;
+
+    println!("{:#?}", packages);
+
+    let packages = client.published_between("2024-03-13", "2024-03-14", "bills")?;
+
+    println!("{:#?}", packages);
+
     Ok(())
 }
