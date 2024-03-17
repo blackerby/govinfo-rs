@@ -1,14 +1,12 @@
 pub mod client;
-pub mod collection;
-pub mod granule;
-pub mod package;
+pub mod collections;
+pub mod packages;
 pub mod relationship;
 
 pub use crate::client::GovInfo;
+pub use crate::collections::{Collection, Collections};
 
-use crate::collection::Collection;
-use crate::granule::Granule;
-use crate::package::Package;
+use crate::packages::{Granule, Package};
 use crate::relationship::Relationship;
 use serde::{Deserialize, Serialize};
 
