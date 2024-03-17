@@ -3,7 +3,7 @@ use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let collections = Collections::new("DEMO_KEY");
-    let collections = collections.list()?;
+    let collections = collections.all()?;
 
     println!("{:#?}", collections);
 

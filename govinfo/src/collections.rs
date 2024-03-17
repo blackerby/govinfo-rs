@@ -1,5 +1,5 @@
 use crate::client::GovInfo;
-use crate::{Container, Payload};
+use crate::{Container, Interval, Payload};
 use crate::{GOVINFO_BASE_URL, MAX_PAGE_SIZE};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -14,7 +14,8 @@ impl Collections {
             client: GovInfo::new(String::from(api_key)),
         }
     }
-    pub fn list(&self) -> Result<Container, Box<dyn Error>> {
+
+    pub fn all(&self) -> Result<Container, Box<dyn Error>> {
         Ok(self
             .client
             .agent
@@ -23,12 +24,10 @@ impl Collections {
             .call()?
             .into_json()?)
     }
+}
 
-    pub fn collection_since(
-        &self,
-        collection: &str,
-        start_date: &str,
-    ) -> Result<Payload, Box<dyn Error>> {
+impl Interval for Collections {
+    fn since(&self, collection: &str, start_date: &str) -> Result<Payload, Box<dyn Error>> {
         Ok(self
             .client
             .agent
@@ -43,7 +42,7 @@ impl Collections {
             .into_json()?)
     }
 
-    pub fn collection_between(
+    fn between(
         &self,
         collection: &str,
         start_date: &str,
