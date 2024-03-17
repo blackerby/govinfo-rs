@@ -42,11 +42,46 @@ pub enum Container {
 }
 
 pub trait Interval {
-    fn since(&self, collection: &str, start_date: &str) -> Result<Payload, Box<dyn Error>>;
+    fn client(&self) -> &GovInfo;
+    fn endpoint(&self) -> &str;
+    fn since(&self, collection: &str, start_date: &str) -> Result<Payload, Box<dyn Error>> {
+        Ok(self
+            .client()
+            .agent
+            .get(
+                format!(
+                    "{GOVINFO_BASE_URL}/{}/{}/{start_date}",
+                    self.endpoint(),
+                    collection.to_uppercase()
+                )
+                .as_str(),
+            )
+            .set("X-Api-Key", &self.client().api_key)
+            .query_pairs(vec![("offsetMark", "*"), ("pageSize", MAX_PAGE_SIZE)])
+            .call()?
+            .into_json()?)
+    }
+
     fn between(
         &self,
         collection: &str,
         start_date: &str,
         end_date: &str,
-    ) -> Result<Payload, Box<dyn Error>>;
+    ) -> Result<Payload, Box<dyn Error>> {
+        Ok(self
+            .client()
+            .agent
+            .get(
+                format!(
+                    "{GOVINFO_BASE_URL}/{}/{}/{start_date}/{end_date}",
+                    self.endpoint(),
+                    collection.to_uppercase()
+                )
+                .as_str(),
+            )
+            .set("X-Api-Key", &self.client().api_key)
+            .query_pairs(vec![("offsetMark", "*"), ("pageSize", MAX_PAGE_SIZE)])
+            .call()?
+            .into_json()?)
+    }
 }
