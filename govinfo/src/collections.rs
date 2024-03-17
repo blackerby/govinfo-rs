@@ -1,7 +1,8 @@
-use crate::client::GovInfo;
 use crate::GOVINFO_BASE_URL;
-use crate::{Container, Interval};
+use crate::{Client, GovInfo};
+use crate::{Container, Payload};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
 
 pub struct Collections {
@@ -26,9 +27,43 @@ impl Collections {
             .call()?
             .into_json()?)
     }
+
+    pub fn since(
+        &self,
+        collection: &str,
+        start_date: &str,
+        params: HashMap<&str, &str>,
+    ) -> Result<Payload, Box<dyn Error>> {
+        let url = self.build_url(collection, start_date, None);
+        let request = self.create_request(&url, params);
+        Ok(request.call()?.into_json()?)
+    }
+
+    pub fn between(
+        &self,
+        collection: &str,
+        start_date: &str,
+        end_date: &str,
+        params: HashMap<&str, &str>,
+    ) -> Result<Payload, Box<dyn Error>> {
+        let url = self.build_url(collection, start_date, Some(end_date));
+        let request = self.create_request(&url, params);
+        Ok(request.call()?.into_json()?)
+    }
+
+    fn build_url(&self, collection: &str, start_date: &str, end_date: Option<&str>) -> String {
+        format!(
+            "{GOVINFO_BASE_URL}/{}/{}/{}/{}",
+            self.endpoint(),
+            collection.to_uppercase(),
+            start_date,
+            end_date.unwrap_or_default()
+        );
+        String::new()
+    }
 }
 
-impl Interval for Collections {
+impl Client for Collections {
     fn client(&self) -> &GovInfo {
         &self.client
     }

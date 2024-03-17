@@ -1,19 +1,18 @@
-pub mod client;
 pub mod collections;
 pub mod packages;
 pub mod published;
 pub mod related;
 
-pub use crate::client::GovInfo;
 pub use crate::collections::{Collection, Collections};
 pub use crate::related::Relationship;
+use std::collections::HashMap;
+use ureq::{Agent, Request};
 
 use crate::packages::{Granule, Package};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
 const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
-const MAX_PAGE_SIZE: &str = "1000";
+pub const MAX_PAGE_SIZE: &str = "1000";
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -41,47 +40,37 @@ pub enum Container {
     Granules(Vec<Granule>),
 }
 
-pub trait Interval {
+pub trait Client {
     fn client(&self) -> &GovInfo;
     fn endpoint(&self) -> &str;
-    fn since(&self, collection: &str, start_date: &str) -> Result<Payload, Box<dyn Error>> {
-        Ok(self
-            .client()
+    fn create_request(&self, url: &str, params: HashMap<&str, &str>) -> Request {
+        self.client()
             .agent
-            .get(
-                format!(
-                    "{GOVINFO_BASE_URL}/{}/{}/{start_date}",
-                    self.endpoint(),
-                    collection.to_uppercase()
-                )
-                .as_str(),
-            )
+            .get(url)
             .set("X-Api-Key", &self.client().api_key)
-            .query_pairs(vec![("offsetMark", "*"), ("pageSize", MAX_PAGE_SIZE)])
-            .call()?
-            .into_json()?)
+            .query_pairs(params)
     }
+}
 
-    fn between(
-        &self,
-        collection: &str,
-        start_date: &str,
-        end_date: &str,
-    ) -> Result<Payload, Box<dyn Error>> {
-        Ok(self
-            .client()
-            .agent
-            .get(
-                format!(
-                    "{GOVINFO_BASE_URL}/{}/{}/{start_date}/{end_date}",
-                    self.endpoint(),
-                    collection.to_uppercase()
-                )
-                .as_str(),
-            )
-            .set("X-Api-Key", &self.client().api_key)
-            .query_pairs(vec![("offsetMark", "*"), ("pageSize", MAX_PAGE_SIZE)])
-            .call()?
-            .into_json()?)
+pub struct GovInfo {
+    pub api_key: String,
+    pub agent: Agent,
+}
+
+impl GovInfo {
+    pub fn new(api_key: String) -> Self {
+        Self {
+            api_key,
+            agent: Agent::new(),
+        }
+    }
+}
+
+impl Default for GovInfo {
+    fn default() -> Self {
+        Self {
+            api_key: String::from("DEMO_KEY"),
+            agent: Agent::new(),
+        }
     }
 }
