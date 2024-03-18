@@ -32,7 +32,7 @@ impl Collections {
         &self,
         collection: &str,
         start_date: &str,
-        params: HashMap<&str, &str>,
+        params: HashMap<String, String>,
     ) -> Result<Payload, Box<dyn Error>> {
         let url = self.build_url(collection, start_date, None);
         let request = self.create_request(&url, params);
@@ -44,7 +44,7 @@ impl Collections {
         collection: &str,
         start_date: &str,
         end_date: &str,
-        params: HashMap<&str, &str>,
+        params: HashMap<String, String>,
     ) -> Result<Payload, Box<dyn Error>> {
         let url = self.build_url(collection, start_date, Some(end_date));
         let request = self.create_request(&url, params);
@@ -52,14 +52,22 @@ impl Collections {
     }
 
     fn build_url(&self, collection: &str, start_date: &str, end_date: Option<&str>) -> String {
-        format!(
-            "{GOVINFO_BASE_URL}/{}/{}/{}/{}",
-            self.endpoint(),
-            collection.to_uppercase(),
-            start_date,
-            end_date.unwrap_or_default()
-        );
-        String::new()
+        if end_date.is_some() {
+            format!(
+                "{GOVINFO_BASE_URL}/{}/{}/{}/{}",
+                self.endpoint(),
+                collection,
+                start_date,
+                end_date.unwrap()
+            )
+        } else {
+            format!(
+                "{GOVINFO_BASE_URL}/{}/{}/{}",
+                self.endpoint(),
+                collection,
+                start_date,
+            )
+        }
     }
 }
 

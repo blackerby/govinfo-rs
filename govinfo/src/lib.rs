@@ -4,6 +4,7 @@ pub mod published;
 pub mod related;
 
 pub use crate::collections::{Collection, Collections};
+pub use crate::published::Published;
 pub use crate::related::Relationship;
 use std::collections::HashMap;
 use ureq::{Agent, Request};
@@ -43,12 +44,16 @@ pub enum Container {
 pub trait Client {
     fn client(&self) -> &GovInfo;
     fn endpoint(&self) -> &str;
-    fn create_request(&self, url: &str, params: HashMap<&str, &str>) -> Request {
+    fn create_request(&self, url: &str, params: HashMap<String, String>) -> Request {
+        let param_pairs: Vec<(&str, &str)> = params
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
         self.client()
             .agent
             .get(url)
             .set("X-Api-Key", &self.client().api_key)
-            .query_pairs(params)
+            .query_pairs(param_pairs)
     }
 }
 
