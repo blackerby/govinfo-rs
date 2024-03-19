@@ -1,29 +1,19 @@
 use std::error::Error;
 
-use crate::{Client, Container, Endpoint, Params};
+use crate::{Client, Collections, Container};
 
 pub struct GovInfo {
-    pub endpoint: Endpoint,
+    pub api_key: Option<String>,
 }
 
 impl GovInfo {
-    pub fn new(api_key: String, endpoint: String) -> Self {
-        Self {
-            endpoint: match Endpoint::from(endpoint) {
-                Endpoint::Collections(collections) => {
-                    Endpoint::Collections(collections.api_key(api_key))
-                }
-                _ => unimplemented!(),
-            },
-        }
+    pub fn new(api_key: Option<String>) -> Self {
+        Self { api_key }
     }
 
     pub fn collections(&self) -> Result<Container, Box<dyn Error>> {
-        if let Endpoint::Collections(collections) = &self.endpoint {
-            Ok(collections.get(None).call()?.into_json()?)
-        } else {
-            panic!("cannot...");
-        }
+        let collections = Collections::new();
+        Ok(collections.get(None).call()?.into_json()?)
     }
     pub fn packages() {}
     pub fn published() {}
