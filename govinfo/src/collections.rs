@@ -1,83 +1,143 @@
-use crate::GOVINFO_BASE_URL;
-use crate::{Client, GovInfo};
-use crate::{Container, Payload};
+use crate::{Client, Params};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::error::Error;
+use ureq::Agent;
 
 pub struct Collections {
-    client: GovInfo,
-    endpoint: &'static str,
+    api_key: String,
+    agent: Agent,
+    endpoint: String,
+    collection: Option<String>,
+    start_date: Option<String>,
+    end_date: Option<String>,
+    offset: Option<String>,
+    page_size: Option<String>,
+    doc_class: Option<String>,
+    congress: Option<String>,
+    court_type: Option<String>,
+    state: Option<String>,
+    topic: Option<String>,
+    is_glp: Option<bool>,
+    nature_suit_code: Option<String>,
+    nature_suit: Option<String>,
+    offset_mark: Option<String>,
+}
+
+impl Default for Collections {
+    fn default() -> Self {
+        Self {
+            api_key: String::from("DEMO_KEY"),
+            agent: Agent::new(),
+            endpoint: String::from("collections"),
+            collection: None,
+            start_date: None,
+            end_date: None,
+            offset: None,
+            page_size: None,
+            doc_class: None,
+            congress: None,
+            court_type: None,
+            state: None,
+            topic: None,
+            is_glp: None,
+            nature_suit_code: None,
+            nature_suit: None,
+            offset_mark: None,
+        }
+    }
 }
 
 impl Collections {
-    pub fn new(api_key: &str) -> Self {
-        Self {
-            client: GovInfo::new(String::from(api_key)),
-            endpoint: "collections",
-        }
-    }
-
-    pub fn all(&self) -> Result<Container, Box<dyn Error>> {
-        Ok(self
-            .client
-            .agent
-            .get(format!("{GOVINFO_BASE_URL}/{}", self.endpoint).as_str())
-            .set("X-Api-Key", &self.client.api_key)
-            .call()?
-            .into_json()?)
-    }
-
-    pub fn since(
-        &self,
-        collection: &str,
-        start_date: &str,
-        params: HashMap<String, String>,
-    ) -> Result<Payload, Box<dyn Error>> {
-        let url = self.build_url(collection, start_date, None);
-        let request = self.create_request(&url, params);
-        Ok(request.call()?.into_json()?)
-    }
-
-    pub fn between(
-        &self,
-        collection: &str,
-        start_date: &str,
-        end_date: &str,
-        params: HashMap<String, String>,
-    ) -> Result<Payload, Box<dyn Error>> {
-        let url = self.build_url(collection, start_date, Some(end_date));
-        let request = self.create_request(&url, params);
-        Ok(request.call()?.into_json()?)
-    }
-
-    fn build_url(&self, collection: &str, start_date: &str, end_date: Option<&str>) -> String {
-        if end_date.is_some() {
-            format!(
-                "{GOVINFO_BASE_URL}/{}/{}/{}/{}",
-                self.endpoint(),
-                collection,
-                start_date,
-                end_date.unwrap()
-            )
-        } else {
-            format!(
-                "{GOVINFO_BASE_URL}/{}/{}/{}",
-                self.endpoint(),
-                collection,
-                start_date,
-            )
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
-impl Client for Collections {
-    fn client(&self) -> &GovInfo {
-        &self.client
+impl Params for Collections {
+    fn api_key(mut self, api_key: String) -> Self {
+        self.api_key = api_key;
+        self
+    }
+
+    fn get_api_key(&self) -> &str {
+        &self.api_key
     }
 
     fn endpoint(&self) -> &str {
-        self.endpoint
+        &self.endpoint
+    }
+
+    fn agent(&self) -> &Agent {
+        &self.agent
+    }
+
+    fn collection(mut self, collection: String) -> Self {
+        self.collection = Some(collection);
+        self
+    }
+
+    fn start_date(mut self, start_date: String) -> Self {
+        self.start_date = Some(start_date);
+        self
+    }
+
+    fn end_date(mut self, end_date: String) -> Self {
+        self.end_date = Some(end_date);
+        self
+    }
+
+    fn offset(mut self, offset: String) -> Self {
+        self.offset = Some(offset);
+        self
+    }
+
+    fn page_size(mut self, page_size: String) -> Self {
+        self.page_size = Some(page_size);
+        self
+    }
+
+    fn doc_class(mut self, doc_class: String) -> Self {
+        self.doc_class = Some(doc_class);
+        self
+    }
+
+    fn congress(mut self, congress: String) -> Self {
+        self.congress = Some(congress);
+        self
+    }
+
+    fn court_type(mut self, court_type: String) -> Self {
+        self.court_type = Some(court_type);
+        self
+    }
+
+    fn state(mut self, state: String) -> Self {
+        self.state = Some(state);
+        self
+    }
+
+    fn topic(mut self, topic: String) -> Self {
+        self.topic = Some(topic);
+        self
+    }
+
+    fn is_glp(mut self, is_glp: bool) -> Self {
+        self.is_glp = Some(is_glp);
+        self
+    }
+
+    fn nature_suit_code(mut self, nature_suit_code: String) -> Self {
+        self.nature_suit_code = Some(nature_suit_code);
+        self
+    }
+
+    fn nature_suit(mut self, nature_suit: String) -> Self {
+        self.nature_suit = Some(nature_suit);
+        self
+    }
+
+    fn offset_mark(mut self, offset_mark: String) -> Self {
+        self.offset_mark = Some(offset_mark);
+        self
     }
 }
 
@@ -89,3 +149,5 @@ pub struct Collection {
     package_count: usize,
     granule_count: Option<usize>,
 }
+
+impl Client for Collections {}
