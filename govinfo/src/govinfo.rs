@@ -1,6 +1,4 @@
-use std::error::Error;
-
-use crate::{Client, Collections, Container};
+use crate::{Collections, Params};
 
 pub struct GovInfo {
     pub api_key: Option<String>,
@@ -11,10 +9,14 @@ impl GovInfo {
         Self { api_key }
     }
 
-    pub fn collections(&self) -> Result<Container, Box<dyn Error>> {
-        let collections = Collections::new();
-        Ok(collections.get(None).call()?.into_json()?)
+    pub fn collections(&self) -> Collections {
+        Collections::new()
     }
+
+    pub fn collection(&self, collection: String) -> Collections {
+        Collections::new().collection(collection)
+    }
+
     pub fn packages() {}
     pub fn published() {}
     pub fn related() {}

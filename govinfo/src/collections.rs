@@ -1,7 +1,10 @@
-use crate::{Client, Params};
+use std::error::Error;
+
+use crate::{Client, Container, Params};
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
 
+#[derive(Debug)]
 pub struct Collections {
     api_key: String,
     agent: Agent,
@@ -50,6 +53,12 @@ impl Collections {
     pub fn new() -> Self {
         Self::default()
     }
+
+    pub fn all(&self) -> Result<Container, Box<dyn Error>> {
+        Ok(self.get(None).call()?.into_json()?)
+    }
+
+    pub fn since(&self, _start_date: String) {} // -> Result<Container, Box<dyn Error>> {}
 }
 
 impl Params for Collections {
