@@ -6,8 +6,6 @@ pub mod related;
 pub use crate::collections::{Collection, Collections};
 pub use crate::govinfo::GovInfo;
 pub use crate::related::Relationship;
-use std::collections::HashMap;
-use ureq::{Agent, Request};
 
 use crate::packages::{Granule, Package};
 use serde::{Deserialize, Serialize};
@@ -41,24 +39,6 @@ pub enum Container {
     Granules(Vec<Granule>),
 }
 
-pub trait Client: Params {
-    fn get(&self, params: Option<HashMap<String, String>>) -> Request {
-        let url = format!("{GOVINFO_BASE_URL}/{}", self.endpoint());
-        let param_pairs = if let Some(ref params) = params {
-            params
-                .iter()
-                .map(|(k, v)| (k.as_str(), v.as_str()))
-                .collect()
-        } else {
-            Vec::new()
-        };
-        self.agent()
-            .get(&url)
-            .set("X-Api-Key", &self.get_api_key())
-            .query_pairs(param_pairs)
-    }
-}
-
 pub enum Endpoint {
     Collections(Collections),
     Packages,
@@ -66,8 +46,8 @@ pub enum Endpoint {
     Published,
 }
 
-impl From<String> for Endpoint {
-    fn from(value: String) -> Self {
+impl From<&str> for Endpoint {
+    fn from(value: &str) -> Self {
         match value.as_ref() {
             "collections" => Endpoint::Collections(Collections::new()),
             "packages" => Endpoint::Packages,
@@ -79,10 +59,6 @@ impl From<String> for Endpoint {
 }
 
 pub trait Params {
-    fn api_key(self, api_key: String) -> Self;
-    fn get_api_key(&self) -> &str;
-    fn agent(&self) -> &Agent;
-    fn endpoint(&self) -> &str;
     fn collection(self, collection: String) -> Self;
     fn start_date(self, start_date: String) -> Self;
     fn end_date(self, end_date: String) -> Self;

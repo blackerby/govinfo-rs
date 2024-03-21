@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
-members = ["govinfo", "govinfo-cli"]
+members = [ "derive_params","govinfo", "govinfo-cli"]
 
