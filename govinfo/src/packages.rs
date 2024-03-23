@@ -1,3 +1,4 @@
+use crate::GovInfo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,4 +20,50 @@ pub struct Granule {
     granule_id: String,
     granule_class: String,
     md5: String,
+}
+
+pub trait Packages {
+    fn md5(self, md5: String) -> Self;
+    fn granule_class(self, granule_class: String) -> Self;
+    fn package_id(self, package_id: String) -> Self;
+    fn summary(self) -> Self;
+    fn granules(self) -> Self;
+    fn granule_id(self, granule_id: String) -> Self;
+}
+
+impl Packages for GovInfo {
+    fn md5(mut self, md5: String) -> Self {
+        self.params.insert("md5".to_string(), md5.to_string());
+        self
+    }
+
+    fn granule_class(mut self, granule_class: String) -> Self {
+        self.params
+            .insert("granuleClass".to_string(), granule_class.to_string());
+        self
+    }
+
+    fn package_id(mut self, package_id: String) -> Self {
+        self.endpoint.push('/');
+        self.endpoint.push_str(&package_id);
+        self
+    }
+
+    fn summary(mut self) -> Self {
+        self.endpoint.push('/');
+        self.endpoint.push_str("summary");
+        self
+    }
+
+    fn granules(mut self) -> Self {
+        self.endpoint.push('/');
+        self.endpoint.push_str("granules");
+        self
+    }
+
+    fn granule_id(mut self, granule_id: String) -> Self {
+        self.endpoint.push('/');
+        self.endpoint.push_str(&granule_id);
+        self
+    }
 }

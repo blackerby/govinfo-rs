@@ -1,17 +1,29 @@
 pub mod collections;
 pub mod govinfo;
 pub mod packages;
+pub mod published;
 pub mod related;
 
-pub use crate::collections::{Collection, Collections};
+pub use crate::collections::Collection;
 pub use crate::govinfo::GovInfo;
-pub use crate::related::Relationship;
+pub use crate::published::Published;
+pub use crate::related::{Related, Relationship};
 
-use crate::packages::{Granule, Package};
+pub use crate::packages::{Granule, Package, Packages};
 use serde::{Deserialize, Serialize};
 
 const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
-pub const MAX_PAGE_SIZE: &str = "1000";
+const MAX_PAGE_SIZE: &str = "1000";
+const DEFAULT_OFFSET_MARK: &str = "*";
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum GovInfoResponse {
+    #[serde(untagged)]
+    Payload(Payload),
+    #[serde(untagged)]
+    Container(Container),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -20,12 +32,7 @@ pub struct Payload {
     message: Option<String>,
     next_page: Option<String>,
     previous_page: Option<String>,
-    #[serde(
-        alias = "packages",
-        alias = "collections",
-        alias = "packages",
-        alias = "granules"
-    )]
+    #[serde(alias = "packages", alias = "collections", alias = "granules")]
     #[serde(flatten)]
     container: Container,
 }
@@ -37,25 +44,6 @@ pub enum Container {
     Packages(Vec<Package>),
     Relationships(Vec<Relationship>),
     Granules(Vec<Granule>),
-}
-
-pub enum Endpoint {
-    Collections(Collections),
-    Packages,
-    Related,
-    Published,
-}
-
-impl From<&str> for Endpoint {
-    fn from(value: &str) -> Self {
-        match value.as_ref() {
-            "collections" => Endpoint::Collections(Collections::new()),
-            "packages" => Endpoint::Packages,
-            "related" => Endpoint::Related,
-            "published" => Endpoint::Published,
-            _ => panic!("No matching endpoint"),
-        }
-    }
 }
 
 pub trait Params {
