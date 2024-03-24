@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use ureq::Agent;
 
 const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
-const MAX_PAGE_SIZE: &str = "1000";
+const MAX_PAGE_SIZE: u16 = 1000;
 const DEFAULT_OFFSET_MARK: &str = "*";
 
 pub struct GovInfo {
@@ -128,15 +128,12 @@ pub struct Collection {
 }
 
 // TODO: use chrono date type for date params instead of strings
-// TODO: remove support for "offset" (must use "offsetMark")
-// TODO: use numeric type for "page_size"
 // TODO: research which params can be encoded as enums
 pub trait Params {
     fn collection(self, collection: String) -> Self;
     fn start_date(self, start_date: String) -> Self;
     fn end_date(self, end_date: String) -> Self;
-    fn offset(self, offset: String) -> Self;
-    fn page_size(self, page_size: String) -> Self;
+    fn page_size(self, page_size: u16) -> Self;
     fn doc_class(self, doc_class: String) -> Self;
     fn congress(self, congress: String) -> Self;
     fn court_type(self, court_type: String) -> Self;
@@ -203,12 +200,7 @@ impl Params for GovInfo {
         self
     }
 
-    fn offset(mut self, offset: String) -> Self {
-        self.params.insert("offset".to_string(), offset.to_string());
-        self
-    }
-
-    fn page_size(mut self, page_size: String) -> Self {
+    fn page_size(mut self, page_size: u16) -> Self {
         self.params
             .insert("pageSize".to_string(), page_size.to_string());
         self
