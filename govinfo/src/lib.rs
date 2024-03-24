@@ -4,6 +4,8 @@ pub mod packages;
 pub mod published;
 pub mod related;
 
+use std::fmt::Display;
+
 pub use crate::collections::Collection;
 pub use crate::govinfo::GovInfo;
 pub use crate::published::Published;
@@ -61,4 +63,34 @@ pub trait Params {
     fn nature_suit_code(self, nature_suit_code: String) -> Self;
     fn nature_suit(self, nature_suirt: String) -> Self;
     fn offset_mark(self, offset_mark: String) -> Self;
+}
+
+pub enum Endpoint {
+    Collections,
+    Packages,
+    Published,
+    Related,
+}
+
+impl From<&str> for Endpoint {
+    fn from(value: &str) -> Self {
+        match value {
+            "collections" => Endpoint::Collections,
+            "packages" => Endpoint::Packages,
+            "published" => Endpoint::Published,
+            "related" => Endpoint::Related,
+            _ => panic!("unsupported endpoint"),
+        }
+    }
+}
+
+impl Display for Endpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Endpoint::Collections => write!(f, "collections"),
+            Endpoint::Packages => write!(f, "packages"),
+            Endpoint::Published => write!(f, "published"),
+            Endpoint::Related => write!(f, "related"),
+        }
+    }
 }

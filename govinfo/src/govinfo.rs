@@ -2,7 +2,7 @@ use core::panic;
 use std::{collections::HashMap, error::Error};
 use ureq::Agent;
 
-use crate::Params;
+use crate::{Endpoint, Params};
 use crate::{GovInfoResponse, DEFAULT_OFFSET_MARK, GOVINFO_BASE_URL, MAX_PAGE_SIZE};
 
 pub struct GovInfo {
@@ -39,12 +39,12 @@ impl GovInfo {
     }
 
     pub fn collections(mut self) -> GovInfo {
-        self.endpoint = "collections".to_string();
+        self.endpoint = Endpoint::Collections.to_string();
         self
     }
 
     pub fn packages(mut self) -> GovInfo {
-        self.endpoint = "packages".to_string();
+        self.endpoint = Endpoint::Packages.to_string();
         self
     }
 
@@ -53,24 +53,24 @@ impl GovInfo {
             .insert("pageSize".to_string(), MAX_PAGE_SIZE.to_string());
         self.params
             .insert("offsetMark".to_string(), DEFAULT_OFFSET_MARK.to_string());
-        self.endpoint = "published".to_string();
+        self.endpoint = Endpoint::Published.to_string();
         self
     }
 
     pub fn related(mut self) -> GovInfo {
-        self.endpoint = "related".to_string();
+        self.endpoint = Endpoint::Related.to_string();
         self
     }
 }
 
 impl Params for GovInfo {
     fn collection(mut self, collection: String) -> Self {
-        match self.endpoint.as_ref() {
-            "collections" | "related" => {
+        match Endpoint::from(self.endpoint.as_ref()) {
+            Endpoint::Collections | Endpoint::Related => {
                 self.endpoint.push('/');
                 self.endpoint.push_str(&collection.to_uppercase());
             }
-            "published" => {
+            Endpoint::Published => {
                 self.params
                     .insert("collection".to_string(), collection.to_string());
             }
