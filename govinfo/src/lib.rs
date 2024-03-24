@@ -1,4 +1,5 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
+// TODO: replace ureq with reqwest
 
 pub mod packages;
 pub mod published;
