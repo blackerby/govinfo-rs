@@ -1,4 +1,6 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
+// TODO: add custom error type
+// TODO: add iterator for pagination
 
 pub mod packages;
 pub mod published;
