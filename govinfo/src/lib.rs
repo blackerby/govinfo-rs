@@ -1,5 +1,4 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
-// TODO: replace ureq with reqwest
 
 pub mod packages;
 pub mod published;
@@ -14,8 +13,8 @@ pub use crate::published::Published;
 pub use crate::related::{Related, Relationship};
 
 use chrono::{DateTime, NaiveDate, Utc};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use ureq::Agent;
 
 const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
 const MAX_PAGE_SIZE: u16 = 1000;
@@ -25,7 +24,7 @@ pub struct GovInfo {
     pub endpoint: Endpoint,
     pub path_params: Vec<String>,
     pub api_key: Option<&'static str>,
-    pub agent: Agent,
+    pub client: Client,
     pub params: HashMap<String, String>,
 }
 
@@ -35,7 +34,7 @@ impl GovInfo {
             endpoint: Endpoint::Collections,
             path_params: Vec::new(),
             api_key,
-            agent: Agent::new(),
+            client: Client::new(),
             params: HashMap::new(),
         }
     }
@@ -49,20 +48,17 @@ impl GovInfo {
         format!("{GOVINFO_BASE_URL}/{}", path)
     }
 
-    pub fn get(&self) -> Result<GovInfoResponse, Box<dyn Error>> {
+    pub async fn get(&self) -> Result<GovInfoResponse, Box<dyn Error>> {
         let url = self.url();
-        let param_pairs: Vec<(&str, &str)> = self
-            .params
-            .iter()
-            .map(|(k, v)| (k.as_str(), v.as_str()))
-            .collect();
         Ok(self
-            .agent
+            .client
             .get(&url)
-            .set("X-Api-Key", &self.api_key.unwrap_or("DEMO_KEY"))
-            .query_pairs(param_pairs)
-            .call()?
-            .into_json()?)
+            .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
+            .query(&self.params)
+            .send()
+            .await?
+            .json::<GovInfoResponse>()
+            .await?)
     }
 
     pub fn collections(mut self) -> GovInfo {
