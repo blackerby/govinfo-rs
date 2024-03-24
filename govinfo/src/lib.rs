@@ -5,6 +5,7 @@ pub mod packages;
 pub mod published;
 pub mod related;
 
+use core::panic;
 use std::fmt::Display;
 use std::{collections::HashMap, error::Error};
 
@@ -12,6 +13,7 @@ pub use crate::packages::{Granule, Package, Packages};
 pub use crate::published::Published;
 pub use crate::related::{Related, Relationship};
 
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
 
@@ -127,7 +129,6 @@ pub struct Collection {
     granule_count: Option<usize>,
 }
 
-// TODO: use chrono date type for date params instead of strings
 // TODO: research which params can be encoded as enums
 pub trait Params {
     fn collection(self, collection: String) -> Self;
@@ -191,12 +192,36 @@ impl Params for GovInfo {
     }
 
     fn start_date(mut self, start_date: String) -> Self {
-        self.path_params.push(start_date);
+        match self.endpoint {
+            Endpoint::Collections => {
+                if start_date.parse::<DateTime<Utc>>().is_ok() {
+                    self.path_params.push(start_date);
+                }
+            }
+            Endpoint::Published => {
+                if start_date.parse::<NaiveDate>().is_ok() {
+                    self.path_params.push(start_date);
+                }
+            }
+            _ => panic!("not a valid thingy"),
+        }
         self
     }
 
     fn end_date(mut self, end_date: String) -> Self {
-        self.path_params.push(end_date);
+        match self.endpoint {
+            Endpoint::Collections => {
+                if end_date.parse::<DateTime<Utc>>().is_ok() {
+                    self.path_params.push(end_date);
+                }
+            }
+            Endpoint::Published => {
+                if end_date.parse::<NaiveDate>().is_ok() {
+                    self.path_params.push(end_date);
+                }
+            }
+            _ => panic!("not a valid thingy"),
+        }
         self
     }
 

@@ -1,4 +1,5 @@
 use crate::GovInfo;
+use chrono::{DateTime, Utc};
 
 pub trait Published {
     fn bill_version(self, bill_version: String) -> Self;
@@ -13,8 +14,10 @@ impl Published for GovInfo {
     }
 
     fn modified_since(mut self, modified_since: String) -> Self {
-        self.params
-            .insert("modifiedSince".to_string(), modified_since.to_string());
+        if modified_since.parse::<DateTime<Utc>>().is_ok() {
+            self.params
+                .insert("modifiedSince".to_string(), modified_since);
+        }
         self
     }
 }
