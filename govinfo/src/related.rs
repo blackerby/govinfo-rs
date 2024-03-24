@@ -17,8 +17,7 @@ pub trait Related {
 
 impl Related for GovInfo {
     fn access_id(mut self, access_id: String) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str(&access_id);
+        self.path_params.push(access_id);
         self
     }
 

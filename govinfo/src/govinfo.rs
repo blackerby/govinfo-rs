@@ -6,7 +6,8 @@ use crate::{Endpoint, Params};
 use crate::{GovInfoResponse, DEFAULT_OFFSET_MARK, GOVINFO_BASE_URL, MAX_PAGE_SIZE};
 
 pub struct GovInfo {
-    pub endpoint: String,
+    pub endpoint: Endpoint,
+    pub path_params: Vec<String>,
     pub api_key: Option<&'static str>,
     pub agent: Agent,
     pub params: HashMap<String, String>,
@@ -15,15 +16,25 @@ pub struct GovInfo {
 impl GovInfo {
     pub fn new(api_key: Option<&'static str>) -> Self {
         Self {
-            endpoint: String::new(),
+            endpoint: Endpoint::Collections,
+            path_params: Vec::new(),
             api_key,
             agent: Agent::new(),
             params: HashMap::new(),
         }
     }
 
+    // TODO: give this a better name
+    fn url(&self) -> String {
+        let mut path = self.endpoint.to_string();
+        if self.path_params.len() > 0 {
+            path.push_str(&format!("/{}", self.path_params.join("/")));
+        }
+        format!("{GOVINFO_BASE_URL}/{}", path)
+    }
+
     pub fn get(&self) -> Result<GovInfoResponse, Box<dyn Error>> {
-        let url = format!("{GOVINFO_BASE_URL}/{}", self.endpoint);
+        let url = self.url();
         let param_pairs: Vec<(&str, &str)> = self
             .params
             .iter()
@@ -39,12 +50,12 @@ impl GovInfo {
     }
 
     pub fn collections(mut self) -> GovInfo {
-        self.endpoint = Endpoint::Collections.to_string();
+        self.endpoint = Endpoint::Collections;
         self
     }
 
     pub fn packages(mut self) -> GovInfo {
-        self.endpoint = Endpoint::Packages.to_string();
+        self.endpoint = Endpoint::Packages;
         self
     }
 
@@ -53,22 +64,21 @@ impl GovInfo {
             .insert("pageSize".to_string(), MAX_PAGE_SIZE.to_string());
         self.params
             .insert("offsetMark".to_string(), DEFAULT_OFFSET_MARK.to_string());
-        self.endpoint = Endpoint::Published.to_string();
+        self.endpoint = Endpoint::Published;
         self
     }
 
     pub fn related(mut self) -> GovInfo {
-        self.endpoint = Endpoint::Related.to_string();
+        self.endpoint = Endpoint::Related;
         self
     }
 }
 
 impl Params for GovInfo {
     fn collection(mut self, collection: String) -> Self {
-        match Endpoint::from(self.endpoint.as_ref()) {
+        match self.endpoint {
             Endpoint::Collections | Endpoint::Related => {
-                self.endpoint.push('/');
-                self.endpoint.push_str(&collection.to_uppercase());
+                self.path_params.push(collection.to_uppercase());
             }
             Endpoint::Published => {
                 self.params
@@ -80,14 +90,12 @@ impl Params for GovInfo {
     }
 
     fn start_date(mut self, start_date: String) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str(&start_date);
+        self.path_params.push(start_date);
         self
     }
 
     fn end_date(mut self, end_date: String) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str(&end_date);
+        self.path_params.push(end_date);
         self
     }
 
@@ -151,5 +159,36 @@ impl Params for GovInfo {
         self.params
             .insert("offsetMark".to_string(), offset_mark.to_string());
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Params;
+
+    use super::GovInfo;
+
+    #[test]
+    fn test_url_new_client() {
+        let expected = "https://api.govinfo.gov/collections";
+        let result = &GovInfo::new(None).url();
+        assert_eq!(expected, result)
+    }
+
+    #[test]
+    fn test_non_default_endpoint() {
+        let expected = "https://api.govinfo.gov/published";
+        let result = &GovInfo::new(None).published().url();
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_one_path_param() {
+        let expected = "https://api.govinfo.gov/published/2024-03-23";
+        let result = &GovInfo::new(None)
+            .published()
+            .start_date("2024-03-23".to_string())
+            .url();
+        assert_eq!(expected, result);
     }
 }

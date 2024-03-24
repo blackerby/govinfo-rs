@@ -44,26 +44,22 @@ impl Packages for GovInfo {
     }
 
     fn package_id(mut self, package_id: String) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str(&package_id);
+        self.path_params.push(package_id);
         self
     }
 
     fn summary(mut self) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str("summary");
+        self.path_params.push(String::from("summary"));
         self
     }
 
     fn granules(mut self) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str("granules");
+        self.path_params.push(String::from("granules"));
         self
     }
 
     fn granule_id(mut self, granule_id: String) -> Self {
-        self.endpoint.push('/');
-        self.endpoint.push_str(&granule_id);
+        self.path_params.push(granule_id);
         self
     }
 }
