@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.197", features = ["derive"] }
 chrono = { version = "0.4.34", features = ["alloc", "serde"] }
-reqwest = {version = "0.12.1", features = ["json"] }
+reqwest = {version = "0.12.1", features = ["blocking", "json"] }
 

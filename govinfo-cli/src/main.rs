@@ -2,8 +2,7 @@
 use govinfo::{GovInfo, Packages, Params, Published, Related};
 use std::error::Error;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     // let client = GovInfo::new(None);
     // let collections = client.collections().get();
     // println!("{:#?}", collections);
@@ -19,8 +18,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .published()
         .collection(String::from("bills"))
         .start_date(String::from("2024-03-22"))
-        .get()
-        .await?;
+        .page_size(10)
+        .get()?;
     println!("{:#?}", bills);
     Ok(())
 }

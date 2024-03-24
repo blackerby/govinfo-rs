@@ -15,7 +15,7 @@ pub use crate::published::Published;
 pub use crate::related::{Related, Relationship};
 
 use chrono::{DateTime, NaiveDate, Utc};
-use reqwest::Client;
+use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 
 const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
@@ -28,6 +28,7 @@ pub struct GovInfo {
     pub api_key: Option<&'static str>,
     pub client: Client,
     pub params: HashMap<String, String>,
+    pub data: <Vec<Element> as IntoIterator>::IntoIter,
 }
 
 impl GovInfo {
@@ -38,6 +39,7 @@ impl GovInfo {
             api_key,
             client: Client::new(),
             params: HashMap::new(),
+            data: vec![].into_iter(),
         }
     }
 
@@ -50,17 +52,15 @@ impl GovInfo {
         format!("{GOVINFO_BASE_URL}/{}", path)
     }
 
-    pub async fn get(&self) -> Result<GovInfoResponse, Box<dyn Error>> {
+    pub fn get(&self) -> Result<GovInfoResponse, Box<dyn Error>> {
         let url = self.url();
         Ok(self
             .client
             .get(&url)
             .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
             .query(&self.params)
-            .send()
-            .await?
-            .json::<GovInfoResponse>()
-            .await?)
+            .send()?
+            .json::<GovInfoResponse>()?)
     }
 
     pub fn collections(mut self) -> GovInfo {
@@ -86,45 +86,98 @@ impl GovInfo {
         self.endpoint = Endpoint::Related;
         self
     }
+
+    fn try_next(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
+        if let Some(elem) = self.data.next() {
+            return Ok(Some(elem));
+        }
+
+        match self.get()? {
+            GovInfoResponse::Payload { next_page, .. } => {
+                if let Some(next) = next_page {
+                    match self
+                        .client
+                        .get(&next)
+                        .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
+                        .query(&self.params)
+                        .send()?
+                        .json::<GovInfoResponse>()?
+                    {
+                        GovInfoResponse::Payload { container, .. } => {
+                            self.data = container.into_iter();
+                            Ok(self.data.next())
+                        }
+                        GovInfoResponse::Collections(_) => unreachable!(),
+                    }
+                } else {
+                    Ok(None)
+                }
+            }
+            GovInfoResponse::Collections(_) => unreachable!(),
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
+impl Iterator for GovInfo {
+    type Item = Result<Element, Box<dyn Error>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.try_next() {
+            Ok(Some(elem)) => Some(Ok(elem)),
+            Ok(None) => None,
+            Err(err) => Some(Err(err)),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
 pub enum GovInfoResponse {
-    #[serde(untagged)]
-    Payload(Payload),
-    #[serde(untagged)]
-    Container(Container),
+    Collections(Vec<Element>),
+    #[serde(rename_all = "camelCase")]
+    Payload {
+        count: usize,
+        message: Option<String>,
+        next_page: Option<String>,
+        previous_page: Option<String>,
+        #[serde(alias = "packages", alias = "granules")]
+        container: Vec<Element>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct Payload {
-    count: usize,
-    message: Option<String>,
-    next_page: Option<String>,
-    previous_page: Option<String>,
-    #[serde(alias = "packages", alias = "collections", alias = "granules")]
-    #[serde(flatten)]
-    container: Container,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum Container {
-    Collections(Vec<Collection>),
-    Packages(Vec<Package>),
-    Relationships(Vec<Relationship>),
-    Granules(Vec<Granule>),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct Collection {
-    collection_code: String,
-    collection_name: String,
-    package_count: usize,
-    granule_count: Option<usize>,
+#[serde(untagged)]
+pub enum Element {
+    #[serde(rename_all = "camelCase")]
+    Collection {
+        collection_code: String,
+        collection_name: String,
+        package_count: usize,
+        granule_count: Option<usize>,
+    },
+    #[serde(rename_all = "camelCase")]
+    Package {
+        package_id: String,
+        last_modified: String,
+        package_link: String,
+        doc_class: String,
+        title: String,
+        congress: String,
+        date_issued: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Granule {
+        title: String,
+        granule_id: String,
+        granule_class: String,
+        md5: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Relationship {
+        relationship_link: String,
+        collection: String,
+        relationship: String,
+    },
 }
 
 // TODO: research which params can be encoded as enums

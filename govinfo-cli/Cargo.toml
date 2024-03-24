@@ -5,4 +5,3 @@ edition = "2021"
 
 [dependencies]
 govinfo = { path = "../govinfo" }
-tokio = { version = "1.36.0", features = ["rt-multi-thread", "macros"] }
