@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use govinfo::{GovInfo, Packages, Params, Published, Related};
+use govinfo::{Element, GovInfo, Packages, Params, Published, Related};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -17,9 +17,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let bills = GovInfo::new(None)
         .published()
         .collection(String::from("bills"))
-        .start_date(String::from("2024-03-22"))
-        .page_size(10)
+        .start_date(String::from("2024-03-21"))
         .get()?;
-    println!("{:#?}", bills);
+
+    println!("{:#?}", bills.iter().next());
+    println!("{:#?}", bills.iter().next());
+    println!("{:#?}", bills.iter().next());
+
     Ok(())
 }

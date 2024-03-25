@@ -54,15 +54,31 @@ impl GovInfo {
         format!("{GOVINFO_BASE_URL}/{}", path)
     }
 
-    pub fn get(&self) -> Result<GovInfoResponse, Box<dyn Error>> {
+    pub fn get(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
         let url = self.url();
-        Ok(self
+        let response = self
             .client
             .get(&url)
             .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
             .query(&self.params)
             .send()?
-            .json::<GovInfoResponse>()?)
+            .json::<GovInfoResponse>()?;
+
+        match response {
+            GovInfoResponse::Payload {
+                next_page,
+                container,
+                ..
+            } => {
+                self.elements = container.into_iter();
+                self.next_page = next_page;
+                Ok(self.elements.next())
+            }
+            GovInfoResponse::Container(container) => {
+                self.elements = container.into_iter();
+                Ok(self.elements.next())
+            }
+        }
     }
 
     pub fn collections(mut self) -> GovInfo {
@@ -95,10 +111,6 @@ impl GovInfo {
             return Ok(Some(elem));
         }
 
-        if self.next_page.is_none() {
-            return Ok(None);
-        }
-
         let response = self
             .client
             .get(self.next_page.as_ref().unwrap())
@@ -112,10 +124,9 @@ impl GovInfo {
         {
             self.elements = container.into_iter();
             self.next_page = next_page;
-            Ok(self.elements.next())
-        } else {
-            Ok(None)
+            return Ok(self.elements.next());
         }
+        Ok(None)
     }
 }
 
