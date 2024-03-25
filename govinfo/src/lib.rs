@@ -28,6 +28,8 @@ pub struct GovInfo {
     pub api_key: Option<&'static str>,
     pub client: Client,
     pub params: HashMap<String, String>,
+    pub next_page: Option<String>,
+    pub elements: <Vec<Element> as IntoIterator>::IntoIter,
 }
 
 impl GovInfo {
@@ -38,6 +40,8 @@ impl GovInfo {
             api_key,
             client: Client::new(),
             params: HashMap::new(),
+            next_page: None,
+            elements: Vec::new().into_iter(),
         }
     }
 
@@ -83,6 +87,47 @@ impl GovInfo {
     pub fn related(mut self) -> GovInfo {
         self.endpoint = Endpoint::Related;
         self
+    }
+
+    // TODO: Refactor if this works
+    fn try_next(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
+        if let Some(elem) = self.elements.next() {
+            return Ok(Some(elem));
+        }
+
+        if self.next_page.is_none() {
+            return Ok(None);
+        }
+
+        let response = self
+            .client
+            .get(self.next_page.as_ref().unwrap())
+            .send()?
+            .json::<GovInfoResponse>()?;
+        if let GovInfoResponse::Payload {
+            next_page,
+            container,
+            ..
+        } = response
+        {
+            self.elements = container.into_iter();
+            self.next_page = next_page;
+            Ok(self.elements.next())
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl Iterator for GovInfo {
+    type Item = Result<Element, Box<dyn Error>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.try_next() {
+            Ok(Some(elem)) => Some(Ok(elem)),
+            Ok(None) => None,
+            Err(err) => Some(Err(err)),
+        }
     }
 }
 
