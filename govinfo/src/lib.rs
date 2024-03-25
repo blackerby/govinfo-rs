@@ -28,7 +28,6 @@ pub struct GovInfo {
     pub api_key: Option<&'static str>,
     pub client: Client,
     pub params: HashMap<String, String>,
-    pub data: <Vec<Element> as IntoIterator>::IntoIter,
 }
 
 impl GovInfo {
@@ -39,7 +38,6 @@ impl GovInfo {
             api_key,
             client: Client::new(),
             params: HashMap::new(),
-            data: vec![].into_iter(),
         }
     }
 
@@ -85,48 +83,6 @@ impl GovInfo {
     pub fn related(mut self) -> GovInfo {
         self.endpoint = Endpoint::Related;
         self
-    }
-
-    fn try_next(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
-        if let Some(elem) = self.data.next() {
-            return Ok(Some(elem));
-        }
-
-        match self.get()? {
-            GovInfoResponse::Payload { next_page, .. } => {
-                if let Some(next) = next_page {
-                    match self
-                        .client
-                        .get(&next)
-                        .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
-                        .query(&self.params)
-                        .send()?
-                        .json::<GovInfoResponse>()?
-                    {
-                        GovInfoResponse::Payload { container, .. } => {
-                            self.data = container.into_iter();
-                            Ok(self.data.next())
-                        }
-                        GovInfoResponse::Container(_) => unreachable!(),
-                    }
-                } else {
-                    Ok(None)
-                }
-            }
-            GovInfoResponse::Container(_) => unreachable!(),
-        }
-    }
-}
-
-impl Iterator for GovInfo {
-    type Item = Result<Element, Box<dyn Error>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.try_next() {
-            Ok(Some(elem)) => Some(Ok(elem)),
-            Ok(None) => None,
-            Err(err) => Some(Err(err)),
-        }
     }
 }
 
