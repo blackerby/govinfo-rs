@@ -107,13 +107,13 @@ impl GovInfo {
                             self.data = container.into_iter();
                             Ok(self.data.next())
                         }
-                        GovInfoResponse::Collections(_) => unreachable!(),
+                        GovInfoResponse::Container(_) => unreachable!(),
                     }
                 } else {
                     Ok(None)
                 }
             }
-            GovInfoResponse::Collections(_) => unreachable!(),
+            GovInfoResponse::Container(_) => unreachable!(),
         }
     }
 }
@@ -133,7 +133,7 @@ impl Iterator for GovInfo {
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum GovInfoResponse {
-    Collections(Vec<Element>),
+    Container(Vec<Element>),
     #[serde(rename_all = "camelCase")]
     Payload {
         count: usize,
