@@ -1,6 +1,6 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
 // TODO: add custom error type
-// TODO: add iterator for pagination
+// TODO: handle results response, e.g., https://api.govinfo.gov/related/BILLS-116hr748enr/BILLS?api_key=DEMO_KEY
 
 pub mod packages;
 pub mod published;
@@ -10,9 +10,9 @@ use core::panic;
 use std::fmt::Display;
 use std::{collections::HashMap, error::Error};
 
-pub use crate::packages::{Granule, Package, Packages};
+pub use crate::packages::Packages;
 pub use crate::published::Published;
-pub use crate::related::{Related, Relationship};
+pub use crate::related::Related;
 
 use chrono::{DateTime, NaiveDate, Utc};
 use reqwest::blocking::Client;
@@ -34,15 +34,16 @@ pub struct GovInfo {
 
 impl GovInfo {
     pub fn new(api_key: Option<&'static str>) -> Self {
-        Self {
-            endpoint: Endpoint::Collections,
-            path_params: Vec::new(),
-            api_key,
-            client: Client::new(),
-            params: HashMap::new(),
-            next_page: None,
-            elements: Vec::new().into_iter(),
-        }
+        let mut client = Self::default();
+        client.api_key = api_key;
+        client
+            .params
+            .insert("pageSize".to_string(), MAX_PAGE_SIZE.to_string());
+        client
+            .params
+            .insert("offsetMark".to_string(), DEFAULT_OFFSET_MARK.to_string());
+
+        client
     }
 
     // TODO: give this a better name
@@ -54,15 +55,16 @@ impl GovInfo {
         format!("{GOVINFO_BASE_URL}/{}", path)
     }
 
-    pub fn get(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
+    pub fn get(mut self) -> Result<Self, Box<dyn Error>> {
         let url = self.url();
-        let response = self
+        let request = self
             .client
             .get(&url)
             .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
-            .query(&self.params)
-            .send()?
-            .json::<GovInfoResponse>()?;
+            .query(&self.params);
+
+        println!("{:#?}", request);
+        let response = request.send()?.json::<GovInfoResponse>()?;
 
         match response {
             GovInfoResponse::Payload {
@@ -72,13 +74,13 @@ impl GovInfo {
             } => {
                 self.elements = container.into_iter();
                 self.next_page = next_page;
-                Ok(self.elements.next())
             }
             GovInfoResponse::Container(container) => {
                 self.elements = container.into_iter();
-                Ok(self.elements.next())
             }
         }
+
+        Ok(self)
     }
 
     pub fn collections(mut self) -> GovInfo {
@@ -92,10 +94,6 @@ impl GovInfo {
     }
 
     pub fn published(mut self) -> GovInfo {
-        self.params
-            .insert("pageSize".to_string(), MAX_PAGE_SIZE.to_string());
-        self.params
-            .insert("offsetMark".to_string(), DEFAULT_OFFSET_MARK.to_string());
         self.endpoint = Endpoint::Published;
         self
     }
@@ -105,28 +103,34 @@ impl GovInfo {
         self
     }
 
-    // TODO: Refactor if this works
     fn try_next(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
         if let Some(elem) = self.elements.next() {
             return Ok(Some(elem));
         }
 
+        if self.next_page.is_none() {
+            return Ok(None);
+        }
+
         let response = self
             .client
             .get(self.next_page.as_ref().unwrap())
+            .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
             .send()?
             .json::<GovInfoResponse>()?;
-        if let GovInfoResponse::Payload {
-            next_page,
-            container,
-            ..
-        } = response
-        {
-            self.elements = container.into_iter();
-            self.next_page = next_page;
-            return Ok(self.elements.next());
+
+        match response {
+            GovInfoResponse::Payload {
+                next_page,
+                container,
+                ..
+            } => {
+                self.elements = container.into_iter();
+                self.next_page = next_page;
+            }
+            GovInfoResponse::Container(container) => self.elements = container.into_iter(),
         }
-        Ok(None)
+        Ok(self.elements.next())
     }
 }
 
@@ -142,11 +146,27 @@ impl Iterator for GovInfo {
     }
 }
 
+impl Default for GovInfo {
+    fn default() -> Self {
+        Self {
+            endpoint: Endpoint::Collections,
+            path_params: Vec::new(),
+            api_key: None,
+            client: Client::new(),
+            params: HashMap::new(),
+            next_page: None,
+            elements: Vec::new().into_iter(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
-#[serde(untagged)]
 pub enum GovInfoResponse {
+    #[serde(alias = "collections", alias = "relationships", alias = "results")]
+    #[serde(rename_all = "camelCase")]
     Container(Vec<Element>),
     #[serde(rename_all = "camelCase")]
+    #[serde(untagged)]
     Payload {
         count: usize,
         message: Option<String>,
