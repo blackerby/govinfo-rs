@@ -1,6 +1,5 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
 // TODO: add custom error type
-// TODO: handle results response, e.g., https://api.govinfo.gov/related/BILLS-116hr748enr/BILLS?api_key=DEMO_KEY
 
 pub mod packages;
 pub mod published;
@@ -63,7 +62,6 @@ impl GovInfo {
             .header("X-Api-Key", self.api_key.unwrap_or("DEMO_KEY"))
             .query(&self.params);
 
-        println!("{:#?}", request);
         let response = request.send()?.json::<GovInfoResponse>()?;
 
         match response {
@@ -77,6 +75,9 @@ impl GovInfo {
             }
             GovInfoResponse::Container(container) => {
                 self.elements = container.into_iter();
+            }
+            GovInfoResponse::RelContainer { container, .. } => {
+                self.elements = container.into_iter()
             }
         }
 
@@ -129,6 +130,9 @@ impl GovInfo {
                 self.next_page = next_page;
             }
             GovInfoResponse::Container(container) => self.elements = container.into_iter(),
+            GovInfoResponse::RelContainer { container, .. } => {
+                self.elements = container.into_iter()
+            }
         }
         Ok(self.elements.next())
     }
@@ -162,9 +166,17 @@ impl Default for GovInfo {
 
 #[derive(Debug, Deserialize)]
 pub enum GovInfoResponse {
-    #[serde(alias = "collections", alias = "relationships", alias = "results")]
+    #[serde(alias = "collections")]
     #[serde(rename_all = "camelCase")]
     Container(Vec<Element>),
+    #[serde(rename_all = "camelCase")]
+    #[serde(untagged)]
+    RelContainer {
+        #[serde(alias = "results")]
+        #[serde(alias = "relationships")]
+        container: Vec<Element>,
+        related_id: String,
+    },
     #[serde(rename_all = "camelCase")]
     #[serde(untagged)]
     Payload {
@@ -172,7 +184,8 @@ pub enum GovInfoResponse {
         message: Option<String>,
         next_page: Option<String>,
         previous_page: Option<String>,
-        #[serde(alias = "packages", alias = "granules")]
+        #[serde(alias = "packages")]
+        #[serde(alias = "granules")]
         container: Vec<Element>,
     },
 }
@@ -209,6 +222,15 @@ pub enum Element {
         relationship_link: String,
         collection: String,
         relationship: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Relative {
+        date_issued: String,
+        bill_version: String,
+        package_id: String,
+        package_link: String,
+        bill_version_label: String,
+        last_modified: String,
     },
 }
 

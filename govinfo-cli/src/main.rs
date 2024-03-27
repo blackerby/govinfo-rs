@@ -3,10 +3,28 @@ use govinfo::{Element, GovInfo, Packages, Params, Published, Related};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let client = GovInfo::new(None);
-    let collections: Result<Vec<Element>, Box<dyn Error>> =
-        client.collections().get()?.into_iter().collect();
-    println!("{:#?}", collections);
+    // let relationships: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
+    //     .related()
+    //     .access_id(String::from("BILLS-116hr748enr"))
+    //     .get()?
+    //     .into_iter()
+    //     .collect();
+    //
+    // println!("{:#?}", relationships);
+    let results: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
+        .related()
+        .access_id(String::from("BILLS-116hr748enr"))
+        .collection(String::from("bills"))
+        .get()?
+        .into_iter()
+        .collect();
+
+    println!("{:#?}", results);
+
+    // let client = GovInfo::new(None);
+    // let collections: Result<Vec<Element>, Box<dyn Error>> =
+    //     client.collections().get()?.into_iter().collect();
+    // println!("{:#?}", collections);
 
     // let bills: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
     //     .collections()
@@ -17,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     .into_iter()
     //     .collect();
     //
-    // println!("{:#?}", bills?);
+    // println!("{:#?}", bills);
     //
     // let bills: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
     //     .published()
@@ -27,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     .into_iter()
     //     .collect();
     //
-    // println!("{:#?}", bills?);
+    // println!("{:#?}", bills);
 
     Ok(())
 }
