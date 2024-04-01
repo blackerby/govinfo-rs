@@ -7,4 +7,5 @@ edition = "2021"
 serde = { version = "1.0.197", features = ["derive"] }
 chrono = { version = "0.4.34", features = ["alloc", "serde"] }
 reqwest = {version = "0.12.1", features = ["blocking", "json"] }
+thiserror = "1.0.58"
 

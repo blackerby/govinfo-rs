@@ -1,14 +1,16 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
-// TODO: add custom error type
 // TODO: review type names
+// TODO: replace panics with errors
 
+pub mod error;
 pub mod packages;
 pub mod published;
 pub mod related;
 
+use std::collections::HashMap;
 use std::fmt::Display;
-use std::{collections::HashMap, error::Error};
 
+pub use crate::error::Error;
 pub use crate::packages::Packages;
 pub use crate::published::Published;
 pub use crate::related::Related;
@@ -54,7 +56,7 @@ impl GovInfo {
         format!("{GOVINFO_BASE_URL}/{}", path)
     }
 
-    pub fn get(mut self) -> Result<Self, Box<dyn Error>> {
+    pub fn get(mut self) -> Result<Self, Error> {
         let url = self.url();
         let request = self
             .client
@@ -104,7 +106,7 @@ impl GovInfo {
         self
     }
 
-    fn try_next(&mut self) -> Result<Option<Element>, Box<dyn Error>> {
+    fn try_next(&mut self) -> Result<Option<Element>, Error> {
         if let Some(elem) = self.elements.next() {
             return Ok(Some(elem));
         }
@@ -139,7 +141,7 @@ impl GovInfo {
 }
 
 impl Iterator for GovInfo {
-    type Item = Result<Element, Box<dyn Error>>;
+    type Item = Result<Element, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.try_next() {

@@ -1,9 +1,8 @@
 #[allow(unused_imports)]
-use govinfo::{Element, GovInfo, Packages, Params, Published, Related};
-use std::error::Error;
+use govinfo::{Element, Error, GovInfo, Packages, Params, Published, Related};
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // let relationships: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
+fn main() -> Result<(), Error> {
+    // let relationships: Result<Vec<Element>, Error> = GovInfo::new(None)
     //     .related()
     //     .access_id(String::from("BILLS-116hr748enr"))
     //     .get()?
@@ -11,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     .collect();
     //
     // println!("{:#?}", relationships);
-    let results: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
+    let results: Result<Vec<Element>, Error> = GovInfo::new(None)
         .related()
         .access_id(String::from("BILLS-116hr748enr"))
         .collection(String::from("bills"))
@@ -19,14 +18,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .into_iter()
         .collect();
 
-    println!("{:#?}", results);
+    println!("{:#?}", results?);
 
     // let client = GovInfo::new(None);
-    // let collections: Result<Vec<Element>, Box<dyn Error>> =
+    // let collections: Result<Vec<Element>, Error> =
     //     client.collections().get()?.into_iter().collect();
     // println!("{:#?}", collections);
 
-    // let bills: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
+    // let bills: Result<Vec<Element>, Error> = GovInfo::new(None)
     //     .collections()
     //     .collection(String::from("bills"))
     //     .start_date(String::from("2024-03-21T22:00:00Z"))
@@ -37,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // println!("{:#?}", bills);
     //
-    // let bills: Result<Vec<Element>, Box<dyn Error>> = GovInfo::new(None)
+    // let bills: Result<Vec<Element>, Error> = GovInfo::new(None)
     //     .published()
     //     .collection(String::from("bills"))
     //     .start_date(String::from("2024-03-21"))
