@@ -314,7 +314,7 @@ impl Params for GovInfo {
                 self.params
                     .insert("collection".to_string(), collection.to_string());
             }
-            endpoint => return Err(Error::InvalidEndpointParam(endpoint.to_string())),
+            endpoint => return Err(Error::InvalidPathParam(endpoint.to_string())),
         }
         Ok(self)
     }
@@ -331,7 +331,7 @@ impl Params for GovInfo {
                     self.path_params.push(start_date);
                 }
             }
-            endpoint => return Err(Error::InvalidEndpointParam(endpoint.to_string())),
+            endpoint => return Err(Error::InvalidPathParam(endpoint.to_string())),
         }
         Ok(self)
     }
@@ -348,7 +348,7 @@ impl Params for GovInfo {
                     self.path_params.push(end_date);
                 }
             }
-            endpoint => return Err(Error::InvalidEndpointParam(endpoint.to_string())),
+            endpoint => return Err(Error::InvalidPathParam(endpoint.to_string())),
         }
         Ok(self)
     }

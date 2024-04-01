@@ -7,7 +7,7 @@ pub enum Error {
     #[error("Unsupported endpoint: {0}")]
     UnsupportedEndpoint(String),
     #[error("Invalid endpoint parameter: {0}")]
-    InvalidEndpointParam(String),
+    InvalidPathParam(String),
     #[error("Invalid Congress parameter: {0}")]
     InvalidCongressParam(usize),
 }
