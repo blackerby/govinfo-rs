@@ -1,6 +1,5 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
 // TODO: review type names
-// TODO: test Congress validation
 
 pub mod error;
 pub mod packages;
@@ -111,7 +110,7 @@ impl GovInfo {
 
     fn validate_congress(congress: usize) -> Result<usize> {
         let max_congress = (Utc::now().year() as usize - FIRST_CONGRESS_YEAR).div_ceil(2);
-        if congress < max_congress && congress > 0 {
+        if congress <= max_congress && congress > 0 {
             Ok(congress)
         } else {
             Err(Error::InvalidCongressParam(congress))
@@ -443,5 +442,27 @@ mod tests {
             .unwrap()
             .url();
         assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_valid_congress() {
+        let congress = 118;
+        let result = GovInfo::validate_congress(congress);
+        assert!(result.is_ok());
+        assert!(result.unwrap() == 118);
+    }
+
+    #[test]
+    fn test_congress_too_low() {
+        let congress = 0;
+        let result = GovInfo::validate_congress(congress);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_congress_too_high() {
+        let congress = 119;
+        let result = GovInfo::validate_congress(congress);
+        assert!(result.is_err());
     }
 }
