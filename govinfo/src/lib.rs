@@ -23,6 +23,8 @@ const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
 const MAX_PAGE_SIZE: u16 = 1000;
 const DEFAULT_OFFSET_MARK: &str = "*";
 
+type Result<T> = std::result::Result<T, Error>;
+
 pub struct GovInfo {
     pub endpoint: Endpoint,
     pub path_params: Vec<String>,
@@ -56,7 +58,7 @@ impl GovInfo {
         format!("{GOVINFO_BASE_URL}/{}", path)
     }
 
-    pub fn get(mut self) -> Result<Self, Error> {
+    pub fn get(mut self) -> Result<Self> {
         let url = self.url();
         let request = self
             .client
@@ -106,7 +108,7 @@ impl GovInfo {
         self
     }
 
-    fn try_next(&mut self) -> Result<Option<Element>, Error> {
+    fn try_next(&mut self) -> Result<Option<Element>> {
         if let Some(elem) = self.elements.next() {
             return Ok(Some(elem));
         }
@@ -141,7 +143,7 @@ impl GovInfo {
 }
 
 impl Iterator for GovInfo {
-    type Item = Result<Element, Error>;
+    type Item = Result<Element>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.try_next() {
