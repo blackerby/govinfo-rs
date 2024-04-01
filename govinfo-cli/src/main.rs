@@ -13,7 +13,7 @@ fn main() -> Result<(), Error> {
     let results: Result<Vec<Element>, Error> = GovInfo::new(None)
         .related()
         .access_id(String::from("BILLS-116hr748enr"))
-        .collection(String::from("bills"))
+        .collection(String::from("bills"))?
         .get()?
         .into_iter()
         .collect();

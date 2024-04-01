@@ -1,6 +1,5 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
 // TODO: review type names
-// TODO: replace panics with errors
 
 pub mod error;
 pub mod packages;
@@ -240,9 +239,15 @@ pub enum Element {
 
 // TODO: research which params can be encoded as enums
 pub trait Params {
-    fn collection(self, collection: String) -> Self;
-    fn start_date(self, start_date: String) -> Self;
-    fn end_date(self, end_date: String) -> Self;
+    fn collection(self, collection: String) -> Result<Self>
+    where
+        Self: Sized;
+    fn start_date(self, start_date: String) -> Result<Self>
+    where
+        Self: Sized;
+    fn end_date(self, end_date: String) -> Result<Self>
+    where
+        Self: Sized;
     fn page_size(self, page_size: u16) -> Self;
     fn doc_class(self, doc_class: String) -> Self;
     fn congress(self, congress: String) -> Self;
@@ -262,14 +267,16 @@ pub enum Endpoint {
     Related,
 }
 
-impl From<&str> for Endpoint {
-    fn from(value: &str) -> Self {
+impl TryFrom<&str> for Endpoint {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self> {
         match value {
-            "collections" => Endpoint::Collections,
-            "packages" => Endpoint::Packages,
-            "published" => Endpoint::Published,
-            "related" => Endpoint::Related,
-            _ => panic!("unsupported endpoint"),
+            "collections" => Ok(Endpoint::Collections),
+            "packages" => Ok(Endpoint::Packages),
+            "published" => Ok(Endpoint::Published),
+            "related" => Ok(Endpoint::Related),
+            other => Err(Error::UnsupportedEndpoint(other.to_string())),
         }
     }
 }
@@ -286,7 +293,7 @@ impl Display for Endpoint {
 }
 
 impl Params for GovInfo {
-    fn collection(mut self, collection: String) -> Self {
+    fn collection(mut self, collection: String) -> Result<Self> {
         match self.endpoint {
             Endpoint::Collections | Endpoint::Related => {
                 self.path_params.push(collection.to_uppercase());
@@ -295,12 +302,12 @@ impl Params for GovInfo {
                 self.params
                     .insert("collection".to_string(), collection.to_string());
             }
-            _ => panic!("You shouldn't be able to get here"),
+            endpoint => return Err(Error::InvalidEndpointParam(endpoint.to_string())),
         }
-        self
+        Ok(self)
     }
 
-    fn start_date(mut self, start_date: String) -> Self {
+    fn start_date(mut self, start_date: String) -> Result<Self> {
         match self.endpoint {
             Endpoint::Collections => {
                 if start_date.parse::<DateTime<Utc>>().is_ok() {
@@ -312,12 +319,12 @@ impl Params for GovInfo {
                     self.path_params.push(start_date);
                 }
             }
-            _ => panic!("not a valid thingy"),
+            endpoint => return Err(Error::InvalidEndpointParam(endpoint.to_string())),
         }
-        self
+        Ok(self)
     }
 
-    fn end_date(mut self, end_date: String) -> Self {
+    fn end_date(mut self, end_date: String) -> Result<Self> {
         match self.endpoint {
             Endpoint::Collections => {
                 if end_date.parse::<DateTime<Utc>>().is_ok() {
@@ -329,9 +336,9 @@ impl Params for GovInfo {
                     self.path_params.push(end_date);
                 }
             }
-            _ => panic!("not a valid thingy"),
+            endpoint => return Err(Error::InvalidEndpointParam(endpoint.to_string())),
         }
-        self
+        Ok(self)
     }
 
     fn page_size(mut self, page_size: u16) -> Self {
@@ -418,6 +425,7 @@ mod tests {
         let result = &GovInfo::new(None)
             .published()
             .start_date("2024-03-23".to_string())
+            .unwrap()
             .url();
         assert_eq!(expected, result);
     }
