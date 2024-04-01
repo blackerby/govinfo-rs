@@ -1,11 +1,11 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
 // TODO: add custom error type
+// TODO: review type names
 
 pub mod packages;
 pub mod published;
 pub mod related;
 
-use core::panic;
 use std::fmt::Display;
 use std::{collections::HashMap, error::Error};
 
