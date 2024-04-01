@@ -1,5 +1,6 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
 // TODO: review type names
+// TODO: test Congress validation
 
 pub mod error;
 pub mod packages;
@@ -14,13 +15,14 @@ pub use crate::packages::Packages;
 pub use crate::published::Published;
 pub use crate::related::Related;
 
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 
 const GOVINFO_BASE_URL: &str = "https://api.govinfo.gov";
 const MAX_PAGE_SIZE: u16 = 1000;
 const DEFAULT_OFFSET_MARK: &str = "*";
+const FIRST_CONGRESS_YEAR: usize = 1789;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -105,6 +107,15 @@ impl GovInfo {
     pub fn related(mut self) -> GovInfo {
         self.endpoint = Endpoint::Related;
         self
+    }
+
+    fn validate_congress(congress: usize) -> Result<usize> {
+        let max_congress = (Utc::now().year() as usize - FIRST_CONGRESS_YEAR).div_ceil(2);
+        if congress < max_congress && congress > 0 {
+            Ok(congress)
+        } else {
+            Err(Error::InvalidCongressParam(congress))
+        }
     }
 
     fn try_next(&mut self) -> Result<Option<Element>> {
@@ -250,7 +261,9 @@ pub trait Params {
         Self: Sized;
     fn page_size(self, page_size: u16) -> Self;
     fn doc_class(self, doc_class: String) -> Self;
-    fn congress(self, congress: String) -> Self;
+    fn congress(self, congress: usize) -> Result<Self>
+    where
+        Self: Sized;
     fn court_type(self, court_type: String) -> Self;
     fn state(self, state: String) -> Self;
     fn topic(self, topic: String) -> Self;
@@ -353,10 +366,12 @@ impl Params for GovInfo {
         self
     }
 
-    fn congress(mut self, congress: String) -> Self {
-        self.params
-            .insert("congress".to_string(), congress.to_string());
-        self
+    fn congress(mut self, congress: usize) -> Result<Self> {
+        self.params.insert(
+            "congress".to_string(),
+            Self::validate_congress(congress)?.to_string(),
+        );
+        Ok(self)
     }
 
     fn court_type(mut self, court_type: String) -> Self {
