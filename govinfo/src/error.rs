@@ -10,4 +10,6 @@ pub enum Error {
     InvalidPathParam(String),
     #[error("Invalid Congress parameter: {0}")]
     InvalidCongressParam(usize),
+    #[error("Invalid GovInfo collection: {0}")]
+    InvalidCollectionParam(String),
 }

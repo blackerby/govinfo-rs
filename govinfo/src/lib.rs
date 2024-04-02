@@ -1,5 +1,4 @@
-// TODO: lots of string allocation happening. investigate using how to use string literals instead.
-
+pub mod collection;
 pub mod error;
 pub mod packages;
 pub mod published;
@@ -8,6 +7,7 @@ pub mod related;
 use std::collections::HashMap;
 use std::fmt::Display;
 
+pub use crate::collection::Collection;
 pub use crate::error::Error;
 pub use crate::packages::Packages;
 pub use crate::published::Published;
@@ -232,7 +232,6 @@ pub enum Element {
     },
 }
 
-// TODO: research which params can be encoded as enums
 pub trait Params {
     fn collection(self, collection: String) -> Result<Self>
     where
@@ -291,9 +290,10 @@ impl Display for Endpoint {
 
 impl Params for GovInfo {
     fn collection(mut self, collection: String) -> Result<Self> {
+        let collection = Collection::try_from(collection.as_str())?;
         match self.endpoint {
             Endpoint::Collections | Endpoint::Related => {
-                self.path_params.push(collection.to_uppercase());
+                self.path_params.push(collection.to_string());
             }
             Endpoint::Published => {
                 self.params
