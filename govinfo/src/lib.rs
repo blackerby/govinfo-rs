@@ -1,5 +1,4 @@
 // TODO: lots of string allocation happening. investigate using how to use string literals instead.
-// TODO: review type names
 
 pub mod error;
 pub mod packages;
@@ -49,7 +48,6 @@ impl GovInfo {
         client
     }
 
-    // TODO: give this a better name
     fn url(&self) -> String {
         let mut path = self.endpoint.to_string();
         if self.path_params.len() > 0 {
@@ -69,20 +67,16 @@ impl GovInfo {
         let response = request.send()?.json::<GovInfoResponse>()?;
 
         match response {
-            GovInfoResponse::Payload {
-                next_page,
-                container,
-                ..
+            GovInfoResponse::Paginated {
+                next_page, payload, ..
             } => {
-                self.elements = container.into_iter();
+                self.elements = payload.into_iter();
                 self.next_page = next_page;
             }
-            GovInfoResponse::Container(container) => {
-                self.elements = container.into_iter();
+            GovInfoResponse::Collections(collections) => {
+                self.elements = collections.into_iter();
             }
-            GovInfoResponse::RelContainer { container, .. } => {
-                self.elements = container.into_iter()
-            }
+            GovInfoResponse::Related { payload, .. } => self.elements = payload.into_iter(),
         }
 
         Ok(self)
@@ -134,18 +128,14 @@ impl GovInfo {
             .json::<GovInfoResponse>()?;
 
         match response {
-            GovInfoResponse::Payload {
-                next_page,
-                container,
-                ..
+            GovInfoResponse::Paginated {
+                next_page, payload, ..
             } => {
-                self.elements = container.into_iter();
+                self.elements = payload.into_iter();
                 self.next_page = next_page;
             }
-            GovInfoResponse::Container(container) => self.elements = container.into_iter(),
-            GovInfoResponse::RelContainer { container, .. } => {
-                self.elements = container.into_iter()
-            }
+            GovInfoResponse::Collections(collections) => self.elements = collections.into_iter(),
+            GovInfoResponse::Related { payload, .. } => self.elements = payload.into_iter(),
         }
         Ok(self.elements.next())
     }
@@ -179,27 +169,22 @@ impl Default for GovInfo {
 
 #[derive(Debug, Deserialize)]
 pub enum GovInfoResponse {
-    #[serde(alias = "collections")]
-    #[serde(rename_all = "camelCase")]
-    Container(Vec<Element>),
-    #[serde(rename_all = "camelCase")]
-    #[serde(untagged)]
-    RelContainer {
-        #[serde(alias = "results")]
-        #[serde(alias = "relationships")]
-        container: Vec<Element>,
+    #[serde(rename = "collections")]
+    Collections(Vec<Element>),
+    #[serde(rename_all = "camelCase", untagged)]
+    Related {
+        #[serde(alias = "relationships", alias = "results")]
+        payload: Vec<Element>,
         related_id: String,
     },
-    #[serde(rename_all = "camelCase")]
-    #[serde(untagged)]
-    Payload {
+    #[serde(rename_all = "camelCase", untagged)]
+    Paginated {
         count: usize,
         message: Option<String>,
         next_page: Option<String>,
         previous_page: Option<String>,
-        #[serde(alias = "packages")]
-        #[serde(alias = "granules")]
-        container: Vec<Element>,
+        #[serde(alias = "granules", alias = "packages")]
+        payload: Vec<Element>,
     },
 }
 
@@ -237,7 +222,7 @@ pub enum Element {
         relationship: String,
     },
     #[serde(rename_all = "camelCase")]
-    Relative {
+    Result {
         date_issued: String,
         bill_version: String,
         package_id: String,
